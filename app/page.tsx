@@ -1,69 +1,87 @@
+"use client";
+
 import Image from "next/image";
+import { motion } from "motion/react";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <main className="site-shell welcome-page">
+      <header className="topbar container">
+        <div className="brand">
+          <Image
+            src="/logo-reino-y-gloria.png"
+            alt="Reino y Gloria"
+            width={92}
+            height={58}
+            className="brand-logo"
+            priority
+          />
+
+          <span className="brand-caption">Inscripciones al evento</span>
+        </div>
+
+        <span className="topbar-note">Un encuentro que transforma</span>
+      </header>
+
+      <section className="welcome-hero container">
+        <motion.div
+          className="welcome-copy"
+          initial={{ opacity: 0, y: 22 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.75, ease: "easeOut" }}
+        >
+          <p className="eyebrow">Reino y Gloria · Evento</p>
+
+          <h1 className="welcome-title display-font">
+            Bienvenido a este <em>encuentro.</em>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="welcome-description">
+            Has recibido un enlace de inscripción. Completa tus datos para
+            confirmar tu participación y recibir posteriormente tu invitación
+            personal.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+          <div className="welcome-line" aria-hidden="true" />
+        </motion.div>
+
+        <motion.div
+          className="welcome-card"
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.18, ease: "easeOut" }}
+        >
+          <div className="welcome-card-mark" aria-hidden="true">
+            ✦
+          </div>
+
+          <p className="welcome-card-label">Tu inscripción comienza aquí</p>
+
+          <h2 className="welcome-card-title display-font">
+            Unos momentos para preparar tu lugar.
+          </h2>
+
+          <p className="welcome-card-text">
+            El formulario que verás corresponde al enlace que recibiste.
+            Continúa cuando estés listo.
+          </p>
+
+          <button
+            type="button"
+            className="button-primary welcome-button"
+            onClick={() => {
+              window.history.back();
+            }}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            Comenzar inscripción <span aria-hidden="true">→</span>
+          </button>
+
+          <p className="welcome-card-note">
+            Tu información será utilizada únicamente para la organización del
+            evento.
+          </p>
+        </motion.div>
+      </section>
+    </main>
   );
-}
+} 
