@@ -6,6 +6,7 @@ export type RegistrationFormData = {
   municipio: string;
   organizacion: string;
   area: string;
+  equipos: string;
 };
 
 export type RegistrationField = keyof RegistrationFormData;

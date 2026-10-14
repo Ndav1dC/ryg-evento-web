@@ -9,15 +9,10 @@ export const initialRegistrationData: RegistrationFormData = {
   municipio: "",
   organizacion: "",
   area: "",
+  equipos: "",
 };
 
-export const staffAreas = [
-  "Recepción",
-  "Logística",
-  "Sonido",
-  "Acomodación",
-  "Otra",
-] as const;
+export const staffAreas = ["MEDIOS"] as const;
 
 export const registrationCopy: Record<
   RegistrationType,

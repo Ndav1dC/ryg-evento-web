@@ -812,3 +812,50 @@ a {
   font-size: 12px;
   line-height: 1.6;
 }
+.staff-equipment-field {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.staff-equipment-field label {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.staff-equipment-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 140px;
+  padding: 0.9rem 1rem;
+  border: 1px solid #dedbd4;
+  border-radius: 3px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.staff-equipment-field textarea::placeholder {
+  color: #858078;
+}
+
+.staff-equipment-field textarea:focus-visible {
+  outline: 2px solid #a27c35;
+  outline-offset: 3px;
+}
+
+.staff-equipment-field .panel-note {
+  margin-top: 0;
+}
+
+.review-row--equipment {
+  align-items: flex-start;
+}
+
+.review-row--equipment strong {
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

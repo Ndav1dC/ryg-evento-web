@@ -36,16 +36,15 @@ type Props = {
   tipo: RegistrationType;
 };
 
-export default function RegistrationFlow({
-  tipo,
-}: Props) {
+export default function RegistrationFlow({ tipo }: Props) {
   const reduceMotion = useReducedMotion();
 
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [data, setData] = useState<RegistrationFormData>(
-    initialRegistrationData,
-  );
+  const [data, setData] = useState<RegistrationFormData>(() => ({
+    ...initialRegistrationData,
+    area: tipo === "staff" ? "MEDIOS" : "",
+  }));
   const [error, setError] = useState("");
 
   const lastStep = getLastStep(tipo);
@@ -102,9 +101,9 @@ export default function RegistrationFlow({
     if (step === 2 && tipo === "staff") {
       return (
         <StaffAreaStep
-          value={data.area}
-          onChange={(value) =>
-            updateField("area", value)
+          equipos={data.equipos}
+          onEquiposChange={(value) =>
+            updateField("equipos", value)
           }
         />
       );
