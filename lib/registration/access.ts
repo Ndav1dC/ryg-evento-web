@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { RegistrationType } from "@/types/registration";
 
 export function getRegistrationTypeByCode(

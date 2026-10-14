@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
+
 import RegistrationFlow from "@/components/registration/RegistrationFlow";
+import MunicipalityProvider from "@/components/registration/MunicipalityProvider";
+
 import { getRegistrationTypeByCode } from "@/lib/registration/access";
+import { getMunicipalities } from "@/lib/registration/municipalities";
+
+export const dynamic = "force-dynamic";
 
 export default async function RegistrationPage({
   params,
@@ -14,5 +20,12 @@ export default async function RegistrationPage({
     notFound();
   }
 
-  return <RegistrationFlow tipo={tipo} />;
+  const municipalities =
+    tipo === "staff" ? [] : await getMunicipalities();
+
+  return (
+    <MunicipalityProvider municipalities={municipalities}>
+      <RegistrationFlow tipo={tipo} />
+    </MunicipalityProvider>
+  );
 }

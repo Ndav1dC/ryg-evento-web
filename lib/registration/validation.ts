@@ -1,5 +1,5 @@
 import { staffAreas } from "@/lib/registration/config";
-import { municipalities } from "@/lib/registration/municipalities";
+
 import type {
   RegistrationFormData,
   RegistrationType,
@@ -27,7 +27,7 @@ export function validateRegistrationStep(
       if (!staffAreas.some((area) => area === data.area)) {
         return "Selecciona el área donde apoyarás.";
       }
-    } else if (!municipalities.some((item) => item === data.municipio)) {
+    } else if (!/^\d{5}$/.test(data.municipio)) {
       return "Selecciona un municipio de la lista.";
     }
   }

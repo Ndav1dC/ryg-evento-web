@@ -1,3 +1,5 @@
+import { useMunicipalities } from "@/components/registration/MunicipalityProvider";
+
 import type {
   RegistrationFormData,
   RegistrationType,
@@ -12,8 +14,18 @@ export default function ReviewStep({
   tipo,
   data,
 }: Props) {
+  const municipalities = useMunicipalities();
+
   const isStaff = tipo === "staff";
   const isLeader = tipo === "lider";
+
+  const municipality = municipalities.find(
+    (item) => item.codigo === data.municipio,
+  );
+
+  const municipalityLabel = municipality
+    ? `${municipality.nombre} — ${municipality.departamento_nombre}`
+    : "Municipio no seleccionado";
 
   return (
     <>
@@ -22,8 +34,7 @@ export default function ReviewStep({
       </h2>
 
       <p className="step-description">
-        Comprueba que la información sea correcta antes de
-        continuar.
+        Comprueba que la información sea correcta antes de continuar.
       </p>
 
       <div className="review-box">
@@ -38,11 +49,9 @@ export default function ReviewStep({
         </div>
 
         <div className="review-row">
-          <span>
-            {isStaff ? "Área de apoyo" : "Procedencia"}
-          </span>
+          <span>{isStaff ? "Área de apoyo" : "Procedencia"}</span>
           <strong>
-            {isStaff ? data.area : data.municipio}
+            {isStaff ? data.area : municipalityLabel}
           </strong>
         </div>
 
@@ -56,8 +65,8 @@ export default function ReviewStep({
 
       <p className="panel-note">
         Esta es una vista de prueba. Todavía no se enviarán
-        datos: primero conectaremos el formulario a Supabase.
+        datos: primero terminaremos la conexión de guardado.
       </p>
     </>
   );
-}   
+}

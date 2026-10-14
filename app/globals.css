@@ -790,3 +790,25 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+.combobox-option {
+  cursor: pointer;
+}
+
+.combobox-option--active {
+  background: var(--gold-light);
+}
+
+.municipality-help {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.municipality-empty {
+  margin: 0;
+  padding: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
