@@ -127,8 +127,8 @@ export async function POST(request: Request) {
         ok: true,
         repeated: submission.repeated,
         message: submission.repeated
-          ? "Tu solicitud ya había sido recibida."
-          : "Recibimos tu solicitud. Está pendiente de revisión.",
+          ? "Tu inscripción ya estaba registrada. No se creó otra inscripción."
+          : "Tu inscripción fue realizada correctamente y tu cupo está confirmado. Las indicaciones de ingreso se enviarán posteriormente.",
       },
       submission.repeated ? 200 : 201,
     );
@@ -143,7 +143,9 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("[POST /api/inscripciones] Error inesperado.");
+    console.error(
+      "[POST /api/inscripciones] Error inesperado.",
+    );
 
     return jsonResponse(
       {

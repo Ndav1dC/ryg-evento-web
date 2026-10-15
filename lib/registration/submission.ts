@@ -199,6 +199,33 @@ export async function submitRegistration(
     );
   }
 
+  const {
+    data: capacidad,
+    error: capacityError,
+  } = await supabase
+    .from("eventos")
+    .select("capacidad_maxima")
+    .eq("id", evento.id)
+    .single();
+
+  if (capacityError || !capacidad) {
+    console.error("[submitRegistration:capacidad]", {
+      code: capacityError?.code,
+    });
+
+    throw new RegistrationSubmissionError(
+      "No fue posible comprobar la disponibilidad. Intenta nuevamente.",
+      503,
+    );
+  }
+
+  if (capacidad.capacidad_maxima === null) {
+    throw new RegistrationSubmissionError(
+      "El registro no está disponible temporalmente.",
+      503,
+    );
+  }
+
   if (municipioCodigo !== null) {
     const {
       data: municipio,
@@ -234,7 +261,7 @@ export async function submitRegistration(
       ...expected,
       evento_id: evento.id,
       solicitud_id: input.solicitud_id,
-      estado: "pendiente",
+      estado: "aprobado",
       respuesta: "sin_respuesta",
     });
 
@@ -251,6 +278,26 @@ export async function submitRegistration(
 
       return { repeated: true };
     }
+  }
+
+  if (
+    insertError.message.includes(
+      "No hay cupos disponibles",
+    )
+  ) {
+    const concurrentSubmission =
+      await findExistingSubmission();
+
+    if (concurrentSubmission) {
+      assertSameSubmission(concurrentSubmission, expected);
+
+      return { repeated: true };
+    }
+
+    throw new RegistrationSubmissionError(
+      "Se han agotado los cupos disponibles para este evento.",
+      422,
+    );
   }
 
   console.error("[submitRegistration:insert]", {

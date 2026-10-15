@@ -16,18 +16,19 @@ export default function SuccessStep() {
         tabIndex={-1}
         className="step-heading display-font"
       >
-        Recibimos tu solicitud.
+        Tu inscripción fue recibida.
       </h2>
 
       <p className="step-description">
-        Tu solicitud fue recibida correctamente.
-        El equipo del evento revisará la información.
+        Guardamos tu inscripción correctamente.
+        Las indicaciones de ingreso se enviarán
+        posteriormente al número de WhatsApp registrado.
       </p>
 
       <p className="panel-note">
-        Este mensaje no representa una aprobación ni una
-        reserva de cupo. No necesitas volver a enviar
-        esta solicitud.
+        No necesitas volver a enviar esta inscripción.
+        Para registrar a otra persona, utiliza el botón
+        de abajo.
       </p>
     </div>
   );
