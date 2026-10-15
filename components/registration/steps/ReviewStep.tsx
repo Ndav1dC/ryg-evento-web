@@ -64,8 +64,10 @@ export default function ReviewStep({
       </div>
 
       <p className="panel-note">
-        Esta es una vista de prueba. Todavía no se enviarán
-        datos: primero terminaremos la conexión de guardado.
+        {isStaff
+          ? "El envío de staff todavía no está habilitado."
+          : "Al enviar, registraremos tu solicitud para revisión. " +
+            "Esto no representa una aprobación ni una reserva de cupo."}
       </p>
     </>
   );

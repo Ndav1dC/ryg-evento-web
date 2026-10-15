@@ -3,6 +3,10 @@ type Props = {
   lastStep: number;
   onPrevious: () => void;
   onNext: () => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  canSubmit: boolean;
+  retryLocked: boolean;
 };
 
 export default function RegistrationActions({
@@ -10,6 +14,10 @@ export default function RegistrationActions({
   lastStep,
   onPrevious,
   onNext,
+  onSubmit,
+  isSubmitting,
+  canSubmit,
+  retryLocked,
 }: Props) {
   return (
     <div className="panel-actions">
@@ -18,6 +26,7 @@ export default function RegistrationActions({
           type="button"
           className="button-primary"
           onClick={onNext}
+          disabled={isSubmitting}
         >
           {step === 0
             ? "Comenzar inscripción"
@@ -27,10 +36,19 @@ export default function RegistrationActions({
         <button
           type="button"
           className="button-primary"
-          disabled
-          title="Disponible al conectar Supabase"
+          onClick={onSubmit}
+          disabled={isSubmitting || !canSubmit}
+          title={
+            !canSubmit
+              ? "El envío de staff todavía no está habilitado"
+              : undefined
+          }
         >
-          Enviar inscripción
+          {isSubmitting
+            ? "Enviando…"
+            : retryLocked
+              ? "Reintentar envío"
+              : "Enviar inscripción"}
         </button>
       )}
 
@@ -39,6 +57,7 @@ export default function RegistrationActions({
           type="button"
           className="button-secondary"
           onClick={onPrevious}
+          disabled={isSubmitting || retryLocked}
         >
           ← Anterior
         </button>

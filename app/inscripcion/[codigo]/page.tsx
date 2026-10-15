@@ -25,7 +25,11 @@ export default async function RegistrationPage({
 
   return (
     <MunicipalityProvider municipalities={municipalities}>
-      <RegistrationFlow tipo={tipo} />
+      <RegistrationFlow
+        key={codigo}
+        tipo={tipo}
+        codigo={codigo}
+      />
     </MunicipalityProvider>
   );
 }
