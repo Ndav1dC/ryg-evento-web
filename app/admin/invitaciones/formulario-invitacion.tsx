@@ -27,16 +27,43 @@ export function FormularioInvitacion({
   revocada,
 }: FormularioInvitacionProps) {
   const [resultado, formAction, pendiente] =
-    useActionState(emitirInvitacion, estadoInicial);
+    useActionState(
+      emitirInvitacion,
+      estadoInicial,
+    );
+
+  const hashVigente =
+    resultado.hashActual ?? hashActual;
+
+  const estaRevocada =
+    resultado.ok && resultado.hashActual
+      ? false
+      : revocada;
+
+  const claseSecundaria =
+    "rounded-xl border border-[#D8C38A] bg-white px-5 py-3 text-sm font-medium text-neutral-900 transition hover:bg-[#FBF6E8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#856013] disabled:cursor-not-allowed disabled:opacity-60";
+
+  const clasePrincipal =
+    "rounded-xl bg-gradient-to-r from-[#A87912] via-[#E4C366] to-[#B88A20] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#856013] disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div className="mt-5 border-t border-[#EEE7D6] pt-5">
       <form
         action={formAction}
         onSubmit={(evento) => {
-          const mensaje = hashActual
-            ? `¿Emitir un nuevo QR para ${nombre}? El código anterior dejará de ser válido.`
-            : `¿Generar la invitación QR de ${nombre}?`;
+          const nativo =
+            evento.nativeEvent as SubmitEvent;
+
+          const accion =
+            nativo.submitter?.getAttribute("value");
+
+          if (accion !== "emitir") {
+            return;
+          }
+
+          const mensaje = hashVigente
+            ? `¿Reemitir el QR de ${nombre}? El código anterior dejará de ser válido. Para ver el mismo código utiliza "Recuperar mismo QR".`
+            : `¿Generar y guardar la invitación QR de ${nombre}?`;
 
           if (!window.confirm(mensaje)) {
             evento.preventDefault();
@@ -52,28 +79,55 @@ export function FormularioInvitacion({
         <input
           type="hidden"
           name="hashAnterior"
-          value={hashActual ?? ""}
+          value={hashVigente ?? ""}
         />
 
-        <p className="mb-3 text-xs leading-5 text-neutral-600">
-          {hashActual
-            ? revocada
-              ? "Existe una invitación revocada. Emitir otra creará un código nuevo."
-              : "Ya existe una invitación. Emitir otra invalidará el código anterior."
-            : "Todavía no se ha emitido una invitación."}
+        <p className="mb-4 text-xs leading-5 text-neutral-600">
+          {hashVigente
+            ? estaRevocada
+              ? "La invitación está revocada. Reemitir creará un código nuevo."
+              : "Recuperar muestra la misma invitación. Reemitir reemplaza el código anterior."
+            : "Genera una invitación para guardarla y poder recuperarla después."}
         </p>
 
-        <button
-          type="submit"
-          disabled={pendiente}
-          className="rounded-xl bg-gradient-to-r from-[#A87912] via-[#E4C366] to-[#B88A20] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#856013] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {pendiente
-            ? "Generando..."
-            : hashActual
-              ? "Emitir nuevo QR"
+        <div className="flex flex-wrap gap-3">
+          {hashVigente && !estaRevocada ? (
+            <button
+              type="submit"
+              name="accion"
+              value="recuperar"
+              disabled={pendiente}
+              className={clasePrincipal}
+            >
+              Recuperar mismo QR
+            </button>
+          ) : null}
+
+          <button
+            type="submit"
+            name="accion"
+            value="emitir"
+            disabled={pendiente}
+            className={
+              hashVigente
+                ? claseSecundaria
+                : clasePrincipal
+            }
+          >
+            {hashVigente
+              ? "Reemitir código nuevo"
               : "Generar invitación QR"}
-        </button>
+          </button>
+        </div>
+
+        {pendiente ? (
+          <p
+            role="status"
+            className="mt-3 text-sm text-neutral-600"
+          >
+            Procesando invitación...
+          </p>
+        ) : null}
       </form>
 
       {resultado.mensaje ? (
@@ -89,7 +143,9 @@ export function FormularioInvitacion({
         </p>
       ) : null}
 
-      {resultado.ok && resultado.imagen ? (
+      {!pendiente &&
+      resultado.ok &&
+      resultado.imagen ? (
         <div className="mt-5 rounded-2xl border border-[#E4D3A1] bg-white p-5 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#856013]">
             Reino y Gloria
@@ -117,8 +173,8 @@ export function FormularioInvitacion({
           </a>
 
           <p className="mt-3 text-xs leading-5 text-neutral-500">
-            Guarda la imagen antes de salir.
-            No compartas este código públicamente.
+            Puedes recuperar esta invitación al volver
+            a la página. No compartas el QR públicamente.
           </p>
         </div>
       ) : null}
