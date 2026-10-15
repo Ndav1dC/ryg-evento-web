@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 import type { FormEvent } from "react";
 
 import {
   procesarCodigoRecepcion,
   type ResultadoRecepcion,
 } from "./actions";
+import { LectorCamara } from "./lector-camara";
 
 export function FormularioRecepcion() {
   const [codigo, setCodigo] = useState("");
@@ -15,45 +20,69 @@ export function FormularioRecepcion() {
   const [resultado, setResultado] =
     useState<ResultadoRecepcion | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [camaraActiva, setCamaraActiva] =
+    useState(false);
 
-  async function consultar(
+  const procesandoRef = useRef(false);
+
+  const consultarToken = useCallback(
+    async (valor: string) => {
+      if (procesandoRef.current) {
+        return;
+      }
+
+      const token = valor.trim();
+
+      procesandoRef.current = true;
+      setOcupado(true);
+      setCamaraActiva(false);
+      setCodigo(token);
+      setResultado(null);
+      setCodigoValidado("");
+
+      try {
+        const respuesta =
+          await procesarCodigoRecepcion(
+            token,
+            false,
+          );
+
+        setResultado(respuesta);
+
+        if (respuesta.estado === "valido") {
+          setCodigoValidado(token);
+        }
+      } catch {
+        setResultado({
+          estado: "error",
+          mensaje:
+            "No fue posible consultar el código. Revisa la conexión e intenta nuevamente.",
+        });
+      } finally {
+        procesandoRef.current = false;
+        setOcupado(false);
+      }
+    },
+    [],
+  );
+
+  const alDetectar = useCallback(
+    (valor: string) => {
+      void consultarToken(valor);
+    },
+    [consultarToken],
+  );
+
+  function consultar(
     evento: FormEvent<HTMLFormElement>,
   ) {
     evento.preventDefault();
-
-    if (ocupado) {
-      return;
-    }
-
-    const token = codigo.trim();
-
-    setOcupado(true);
-    setResultado(null);
-    setCodigoValidado("");
-
-    try {
-      const respuesta =
-        await procesarCodigoRecepcion(token, false);
-
-      setResultado(respuesta);
-
-      if (respuesta.estado === "valido") {
-        setCodigoValidado(token);
-      }
-    } catch {
-      setResultado({
-        estado: "error",
-        mensaje:
-          "No fue posible consultar el código. Revisa la conexión e intenta nuevamente.",
-      });
-    } finally {
-      setOcupado(false);
-    }
+    void consultarToken(codigo);
   }
 
   async function confirmarEntrega() {
     if (
-      ocupado ||
+      procesandoRef.current ||
       !codigoValidado ||
       resultado?.estado !== "valido"
     ) {
@@ -68,7 +97,9 @@ export function FormularioRecepcion() {
       return;
     }
 
+    procesandoRef.current = true;
     setOcupado(true);
+    setCamaraActiva(false);
 
     try {
       const respuesta =
@@ -88,14 +119,31 @@ export function FormularioRecepcion() {
 
       setCodigoValidado("");
     } finally {
+      procesandoRef.current = false;
       setOcupado(false);
     }
   }
 
   function limpiar() {
+    if (procesandoRef.current) {
+      return;
+    }
+
+    setCamaraActiva(false);
     setCodigo("");
     setCodigoValidado("");
     setResultado(null);
+  }
+
+  function activarCamara() {
+    if (procesandoRef.current) {
+      return;
+    }
+
+    setResultado(null);
+    setCodigoValidado("");
+    setCodigo("");
+    setCamaraActiva(true);
   }
 
   const etiquetaTipo =
@@ -108,11 +156,49 @@ export function FormularioRecepcion() {
           : "";
 
   const claseBotonSecundario =
-    "rounded-xl border border-[#D8C38A] bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:bg-[#FBF6E8] disabled:opacity-60";
+    "rounded-xl border border-[#D8C38A] bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:bg-[#FBF6E8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#856013] disabled:opacity-60";
 
   return (
     <div className="space-y-6">
-      <form onSubmit={consultar} className="space-y-4">
+      <section
+        aria-label="Escaneo con cámara"
+        className="space-y-4"
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          {!camaraActiva ? (
+            <button
+              type="button"
+              onClick={activarCamara}
+              disabled={ocupado}
+              className={claseBotonSecundario}
+            >
+              Activar cámara
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCamaraActiva(false)}
+              className={claseBotonSecundario}
+            >
+              Detener cámara
+            </button>
+          )}
+
+          <p className="text-xs leading-5 text-neutral-500">
+            Escanear consulta la invitación; no registra
+            la entrega automáticamente.
+          </p>
+        </div>
+
+        {camaraActiva ? (
+          <LectorCamara onDetectado={alDetectar} />
+        ) : null}
+      </section>
+
+      <form
+        onSubmit={consultar}
+        className="space-y-4 border-t border-[#EEE7D6] pt-5"
+      >
         <div>
           <label
             htmlFor="codigo-qr"
@@ -130,7 +216,7 @@ export function FormularioRecepcion() {
             spellCheck={false}
             maxLength={80}
             value={codigo}
-            disabled={ocupado}
+            disabled={ocupado || camaraActiva}
             onChange={(evento) => {
               setCodigo(evento.target.value);
               setCodigoValidado("");
@@ -141,16 +227,21 @@ export function FormularioRecepcion() {
           />
 
           <p className="mt-2 text-xs leading-5 text-neutral-500">
-            Pega el contenido del QR o utiliza un lector
-            que lo escriba en este campo.
+            También puedes pegar el contenido del QR
+            o utilizar un lector que lo escriba en este
+            campo.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
-            disabled={ocupado || !codigo.trim()}
-            className="rounded-xl bg-gradient-to-r from-[#A87912] via-[#E4C366] to-[#B88A20] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={
+              ocupado ||
+              camaraActiva ||
+              !codigo.trim()
+            }
+            className="rounded-xl bg-gradient-to-r from-[#A87912] via-[#E4C366] to-[#B88A20] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#856013] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {ocupado ? "Procesando..." : "Consultar QR"}
           </button>
@@ -218,7 +309,7 @@ export function FormularioRecepcion() {
               type="button"
               onClick={() => void confirmarEntrega()}
               disabled={ocupado}
-              className="mt-5 w-full rounded-xl bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-60 sm:w-auto"
+              className="mt-5 w-full rounded-xl bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#856013] disabled:opacity-60 sm:w-auto"
             >
               {ocupado
                 ? "Registrando..."
