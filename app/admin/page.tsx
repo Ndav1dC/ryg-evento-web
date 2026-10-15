@@ -6,8 +6,19 @@ import { Solicitudes } from "./solicitudes";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+type AdminPageProps = {
+  searchParams: Promise<{
+    estado?: string | string[];
+    tipo?: string | string[];
+    pagina?: string | string[];
+  }>;
+};
+
+export default async function AdminPage({
+  searchParams,
+}: AdminPageProps) {
   const sesion = await requerirSesionPanel();
+  const filtros = await searchParams;
 
   const esAdmin = sesion.rol === "admin";
 
@@ -95,7 +106,7 @@ export default async function AdminPage() {
           </p>
         </section>
 
-        <Solicitudes />
+        <Solicitudes filtros={filtros} />
 
         <footer className="pb-4 text-center text-xs leading-5 text-neutral-500">
           Reino y Gloria · Panel privado del evento
