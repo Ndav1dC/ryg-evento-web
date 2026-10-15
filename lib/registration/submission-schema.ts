@@ -60,10 +60,12 @@ export const registrationSubmissionSchema = z
     municipio: z
       .string()
       .trim()
-      .regex(
-        /^\d{5}$/,
+      .refine(
+        (value) => value === "" || /^\d{5}$/.test(value),
         "Selecciona un municipio válido.",
-      ),
+      )
+      .optional()
+      .default(""),
 
     organizacion: z
       .string()
@@ -80,6 +82,27 @@ export const registrationSubmissionSchema = z
       )
       .optional()
       .default(""),
+
+    equipos: z
+      .string()
+      .max(
+        2000,
+        "La descripción de los equipos es demasiado larga.",
+      )
+      .transform(normalizeText)
+      .pipe(
+        z.string().max(
+          1000,
+          "La descripción de equipos no puede superar 1000 caracteres.",
+        ),
+      )
+      .optional()
+      .default(""),
+
+    disponibilidad_completa: z
+      .boolean()
+      .optional()
+      .default(false),
   })
   .strict();
 
@@ -96,4 +119,16 @@ export const leaderOrganizationSchema = z
   .max(
     200,
     "La iglesia u organización no puede superar 200 caracteres.",
+  );
+
+export const staffEquipmentSchema = z
+  .string()
+  .min(
+    3,
+    "Escribe qué equipos tienes disponibles. " +
+      "Si no tienes, escribe “No tengo equipos”.",
+  )
+  .max(
+    1000,
+    "La descripción de equipos no puede superar 1000 caracteres.",
   );

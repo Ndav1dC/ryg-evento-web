@@ -1,9 +1,12 @@
 import "server-only";
 
+import { z } from "zod";
+
 import { getRegistrationTypeByCode } from "@/lib/registration/access";
 import { getRegistrationEvent } from "@/lib/registration/event";
 import {
   leaderOrganizationSchema,
+  staffEquipmentSchema,
   type RegistrationSubmission,
 } from "@/lib/registration/submission-schema";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,14 +25,20 @@ type SubmissionResult = {
   repeated: boolean;
 };
 
-type ComparableRegistration = {
-  tipo: string;
-  nombre_completo: string;
-  whatsapp: string;
-  municipio_codigo: string | null;
-  organizacion: string | null;
-  area_apoyo: string | null;
-};
+const comparableRegistrationSchema = z.object({
+  tipo: z.enum(["asistente", "lider", "staff"]),
+  nombre_completo: z.string(),
+  whatsapp: z.string(),
+  municipio_codigo: z.string().nullable(),
+  organizacion: z.string().nullable(),
+  area_apoyo: z.string().nullable(),
+  equipos: z.string().nullable(),
+  disponibilidad_completa: z.boolean(),
+});
+
+type ComparableRegistration = z.infer<
+  typeof comparableRegistrationSchema
+>;
 
 function assertSameSubmission(
   existing: ComparableRegistration,
@@ -41,7 +50,10 @@ function assertSameSubmission(
     existing.whatsapp === expected.whatsapp &&
     existing.municipio_codigo === expected.municipio_codigo &&
     existing.organizacion === expected.organizacion &&
-    existing.area_apoyo === expected.area_apoyo;
+    existing.area_apoyo === expected.area_apoyo &&
+    existing.equipos === expected.equipos &&
+    existing.disponibilidad_completa ===
+      expected.disponibilidad_completa;
 
   if (!matches) {
     throw new RegistrationSubmissionError(
@@ -64,29 +76,62 @@ export async function submitRegistration(
     );
   }
 
-  if (tipo === "staff") {
-    throw new RegistrationSubmissionError(
-      "El registro de staff todavía no está habilitado.",
-      403,
-    );
-  }
-
+  let municipioCodigo: string | null = null;
   let organizacion: string | null = null;
+  let areaApoyo: string | null = null;
+  let equipos: string | null = null;
+  let disponibilidadCompleta = false;
 
-  if (tipo === "lider") {
-    const result = leaderOrganizationSchema.safeParse(
-      input.organizacion,
+  if (tipo === "staff") {
+    const equipmentResult = staffEquipmentSchema.safeParse(
+      input.equipos,
     );
 
-    if (!result.success) {
+    if (!equipmentResult.success) {
       throw new RegistrationSubmissionError(
-        result.error.issues[0]?.message ??
-          "Revisa el nombre de tu iglesia u organización.",
+        equipmentResult.error.issues[0]?.message ??
+          "Revisa los equipos disponibles.",
         400,
       );
     }
 
-    organizacion = result.data;
+    if (!input.disponibilidad_completa) {
+      throw new RegistrationSubmissionError(
+        "Debes confirmar tu disponibilidad para apoyar " +
+          "desde el primer día hasta el último.",
+        400,
+      );
+    }
+
+    areaApoyo = "MEDIOS";
+    equipos = equipmentResult.data;
+    disponibilidadCompleta = true;
+  } else {
+    if (!/^\d{5}$/.test(input.municipio)) {
+      throw new RegistrationSubmissionError(
+        "Selecciona un municipio válido.",
+        400,
+      );
+    }
+
+    municipioCodigo = input.municipio;
+
+    if (tipo === "lider") {
+      const organizationResult =
+        leaderOrganizationSchema.safeParse(
+          input.organizacion,
+        );
+
+      if (!organizationResult.success) {
+        throw new RegistrationSubmissionError(
+          organizationResult.error.issues[0]?.message ??
+            "Revisa el nombre de tu iglesia u organización.",
+          400,
+        );
+      }
+
+      organizacion = organizationResult.data;
+    }
   }
 
   const evento = await getRegistrationEvent();
@@ -96,17 +141,21 @@ export async function submitRegistration(
     tipo,
     nombre_completo: input.nombre,
     whatsapp: input.whatsapp,
-    municipio_codigo: input.municipio,
+    municipio_codigo: municipioCodigo,
     organizacion,
-    area_apoyo: null,
+    area_apoyo: areaApoyo,
+    equipos,
+    disponibilidad_completa: disponibilidadCompleta,
   };
 
-  async function findExistingSubmission() {
+  async function findExistingSubmission():
+    Promise<ComparableRegistration | null> {
     const { data, error } = await supabase
       .from("inscripciones")
       .select(
         "tipo, nombre_completo, whatsapp, municipio_codigo, " +
-          "organizacion, area_apoyo",
+          "organizacion, area_apoyo, equipos, " +
+          "disponibilidad_completa",
       )
       .eq("evento_id", evento.id)
       .eq("solicitud_id", input.solicitud_id)
@@ -123,7 +172,24 @@ export async function submitRegistration(
       );
     }
 
-    return data as ComparableRegistration | null;
+    if (data === null) {
+      return null;
+    }
+
+    const result = comparableRegistrationSchema.safeParse(data);
+
+    if (!result.success) {
+      console.error(
+        "[submitRegistration] Datos guardados con formato inesperado.",
+      );
+
+      throw new RegistrationSubmissionError(
+        "No fue posible comprobar tu solicitud. Intenta nuevamente.",
+        500,
+      );
+    }
+
+    return result.data;
   }
 
   const existing = await findExistingSubmission();
@@ -141,31 +207,33 @@ export async function submitRegistration(
     );
   }
 
-  const {
-    data: municipio,
-    error: municipalityError,
-  } = await supabase
-    .from("municipios")
-    .select("codigo")
-    .eq("codigo", input.municipio)
-    .maybeSingle();
+  if (municipioCodigo !== null) {
+    const {
+      data: municipio,
+      error: municipalityError,
+    } = await supabase
+      .from("municipios")
+      .select("codigo")
+      .eq("codigo", municipioCodigo)
+      .maybeSingle();
 
-  if (municipalityError) {
-    console.error("[submitRegistration:municipio]", {
-      code: municipalityError.code,
-    });
+    if (municipalityError) {
+      console.error("[submitRegistration:municipio]", {
+        code: municipalityError.code,
+      });
 
-    throw new RegistrationSubmissionError(
-      "No fue posible validar el municipio. Intenta nuevamente.",
-      500,
-    );
-  }
+      throw new RegistrationSubmissionError(
+        "No fue posible validar el municipio. Intenta nuevamente.",
+        500,
+      );
+    }
 
-  if (!municipio) {
-    throw new RegistrationSubmissionError(
-      "El municipio seleccionado no existe.",
-      400,
-    );
+    if (!municipio) {
+      throw new RegistrationSubmissionError(
+        "El municipio seleccionado no existe.",
+        400,
+      );
+    }
   }
 
   const { error: insertError } = await supabase
@@ -183,7 +251,8 @@ export async function submitRegistration(
   }
 
   if (insertError.code === "23505") {
-    const concurrentSubmission = await findExistingSubmission();
+    const concurrentSubmission =
+      await findExistingSubmission();
 
     if (concurrentSubmission) {
       assertSameSubmission(concurrentSubmission, expected);

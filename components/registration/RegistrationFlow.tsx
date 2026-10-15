@@ -1,6 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import {
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   AnimatePresence,
   motion,
@@ -25,6 +29,14 @@ import {
   initialRegistrationData,
   registrationCopy,
 } from "@/lib/registration/config";
+import {
+  clearSubmissionSession,
+  readSubmissionSession,
+  savePendingSubmission,
+  saveReceivedSubmission,
+  type SubmissionPayload,
+  type SubmissionSession,
+} from "@/lib/registration/submission-session";
 import { validateRegistrationStep } from "@/lib/registration/validation";
 
 import type {
@@ -38,19 +50,27 @@ type Props = {
   codigo: string;
 };
 
-type SubmissionPayload = {
-  solicitud_id: string;
-  codigo: string;
-  nombre: string;
-  whatsapp: string;
-  municipio: string;
-  organizacion: string;
+type InitialSession = {
+  session: SubmissionSession | null;
+  failed: boolean;
 };
 
 type SubmissionResponse = {
   ok: boolean;
   error?: string;
 };
+
+function subscribeToClient() {
+  return () => {};
+}
+
+function getClientSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 function isSubmissionResponse(
   value: unknown,
@@ -71,30 +91,102 @@ function isSubmissionResponse(
   );
 }
 
-export default function RegistrationFlow({
+export default function RegistrationFlow(props: Props) {
+  const isClient = useSyncExternalStore(
+    subscribeToClient,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
+
+  if (!isClient) {
+    return (
+      <main className="site-shell">
+        <BrandHeader />
+
+        <div className="container">
+          <p className="panel-note" role="status">
+            Preparando tu inscripción…
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  return <RegistrationFlowClient {...props} />;
+}
+
+function RegistrationFlowClient({
   tipo,
   codigo,
 }: Props) {
   const reduceMotion = useReducedMotion();
+  const lastStep = getLastStep(tipo);
 
-  const [step, setStep] = useState(0);
+  const [initialSession] = useState<InitialSession>(() => {
+    try {
+      return {
+        session:
+          tipo === "staff"
+            ? null
+            : readSubmissionSession(codigo),
+        failed: false,
+      };
+    } catch {
+      return {
+        session: null,
+        failed: true,
+      };
+    }
+  });
+
+  const restoredPayload =
+    initialSession.session?.status === "pending"
+      ? initialSession.session.payload
+      : null;
+
+  const [step, setStep] = useState(
+    initialSession.session ? lastStep : 0,
+  );
   const [direction, setDirection] = useState(1);
 
   const [data, setData] = useState<RegistrationFormData>(() => ({
     ...initialRegistrationData,
     area: tipo === "staff" ? "MEDIOS" : "",
+    ...(restoredPayload
+      ? {
+          nombre: restoredPayload.nombre,
+          whatsapp: restoredPayload.whatsapp,
+          municipio: restoredPayload.municipio,
+          organizacion: restoredPayload.organizacion,
+        }
+      : {}),
   }));
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    restoredPayload
+      ? "Recuperamos una solicitud cuyo resultado no estaba " +
+          "confirmado. Pulsa “Reintentar envío” para comprobarla."
+      : "",
+  );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [retryLocked, setRetryLocked] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [retryLocked, setRetryLocked] = useState(
+    restoredPayload !== null,
+  );
+  const [submitted, setSubmitted] = useState(
+    initialSession.session?.status === "received",
+  );
 
   const sendingRef = useRef(false);
   const pendingSubmissionRef =
-    useRef<SubmissionPayload | null>(null);
-
-  const lastStep = getLastStep(tipo);
+    useRef<SubmissionPayload | null>(
+      restoredPayload
+        ? {
+            ...restoredPayload,
+            codigo,
+          }
+        : null,
+    );
 
   function updateField(
     field: RegistrationField,
@@ -157,6 +249,7 @@ export default function RegistrationFlow({
 
   async function handleSubmit() {
     if (
+      initialSession.failed ||
       sendingRef.current ||
       submitted ||
       step !== lastStep
@@ -188,7 +281,7 @@ export default function RegistrationFlow({
         }
       }
 
-      pendingSubmissionRef.current = {
+      const newPayload: SubmissionPayload = {
         solicitud_id: crypto.randomUUID(),
         codigo,
         nombre: data.nombre,
@@ -197,6 +290,19 @@ export default function RegistrationFlow({
         organizacion:
           tipo === "lider" ? data.organizacion : "",
       };
+
+      try {
+        savePendingSubmission(newPayload);
+      } catch {
+        setError(
+          "No pudimos conservar la clave de tu solicitud " +
+            "en esta pestaña. No se envió ningún dato. " +
+            "Revisa que el almacenamiento del sitio esté permitido.",
+        );
+        return;
+      }
+
+      pendingSubmissionRef.current = newPayload;
     }
 
     const payload = pendingSubmissionRef.current;
@@ -228,6 +334,15 @@ export default function RegistrationFlow({
       }
 
       if (response.ok && result.ok) {
+        try {
+          saveReceivedSubmission(codigo);
+        } catch {
+          console.warn(
+            "[registration] No se pudo actualizar " +
+              "la confirmación local.",
+          );
+        }
+
         setSubmitted(true);
         setRetryLocked(false);
         return;
@@ -237,11 +352,13 @@ export default function RegistrationFlow({
         400,
         403,
         404,
+        413,
         415,
         422,
       ].includes(response.status);
 
       if (!result.ok && rejectedBeforeInsert) {
+        clearSubmissionSession(codigo);
         pendingSubmissionRef.current = null;
         setRetryLocked(false);
       }
@@ -252,20 +369,44 @@ export default function RegistrationFlow({
       setError(
         !result.ok && rejectedBeforeInsert
           ? message
-          : `${message} No cambies ni recargues esta página; ` +
-              "reintenta el envío con el botón.",
+          : `${message} Reintenta el envío con el botón; ` +
+              "conservaremos la misma solicitud.",
       );
     } catch {
       setError(
         "No pudimos confirmar si tu solicitud fue recibida. " +
-          "No recargues esta página. Pulsa “Reintentar envío”; " +
-          "conservaremos la misma clave y los mismos datos.",
+          "Pulsa “Reintentar envío”. La clave y los datos " +
+          "se conservarán también si recargas esta pestaña.",
       );
     } finally {
       window.clearTimeout(timeoutId);
       sendingRef.current = false;
       setIsSubmitting(false);
     }
+  }
+
+  function startNewRegistration() {
+    try {
+      clearSubmissionSession(codigo);
+    } catch {
+      setError(
+        "No pudimos limpiar la sesión anterior. " +
+          "No se inició otra inscripción.",
+      );
+      return;
+    }
+
+    pendingSubmissionRef.current = null;
+
+    setData({
+      ...initialRegistrationData,
+      area: tipo === "staff" ? "MEDIOS" : "",
+    });
+    setStep(0);
+    setDirection(1);
+    setError("");
+    setRetryLocked(false);
+    setSubmitted(false);
   }
 
   function renderStep() {
@@ -339,6 +480,28 @@ export default function RegistrationFlow({
         },
       };
 
+  if (initialSession.failed) {
+    return (
+      <main className="site-shell">
+        <BrandHeader />
+
+        <div className="registration-layout container">
+          <section className="form-panel">
+            <h2 className="step-heading display-font">
+              No pudimos recuperar tu sesión.
+            </h2>
+
+            <p className="field-error" role="alert">
+              No enviaremos una solicitud nueva para evitar
+              duplicar una anterior. Revisa el almacenamiento
+              del sitio antes de continuar.
+            </p>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="site-shell">
       <BrandHeader />
@@ -374,7 +537,25 @@ export default function RegistrationFlow({
           }}
         >
           {submitted ? (
-            <SuccessStep />
+            <>
+              <SuccessStep />
+
+              {error && (
+                <p className="field-error" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <div className="panel-actions">
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={startNewRegistration}
+                >
+                  Inscribir a otra persona
+                </button>
+              </div>
+            </>
           ) : (
             <>
               <RegistrationProgress
