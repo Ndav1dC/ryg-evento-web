@@ -66,15 +66,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    await submitRegistration(result.data);
+    const submission = await submitRegistration(result.data);
 
     return jsonResponse(
       {
         ok: true,
-        message:
-          "Recibimos tu solicitud. Está pendiente de revisión.",
+        repeated: submission.repeated,
+        message: submission.repeated
+          ? "Tu solicitud ya había sido recibida."
+          : "Recibimos tu solicitud. Está pendiente de revisión.",
       },
-      201,
+      submission.repeated ? 200 : 201,
     );
   } catch (error: unknown) {
     if (error instanceof RegistrationSubmissionError) {

@@ -22,6 +22,11 @@ function normalizeWhatsapp(value: string): string {
 
 export const registrationSubmissionSchema = z
   .object({
+    solicitud_id: z
+      .string()
+      .uuid("La clave de la solicitud no es válida.")
+      .transform((value) => value.toLowerCase()),
+
     codigo: z
       .string()
       .min(1, "El enlace de inscripción no es válido.")
@@ -35,7 +40,10 @@ export const registrationSubmissionSchema = z
         z
           .string()
           .min(3, "Escribe tu nombre completo.")
-          .max(150, "El nombre no puede superar 150 caracteres."),
+          .max(
+            150,
+            "El nombre no puede superar 150 caracteres.",
+          ),
       ),
 
     whatsapp: z
@@ -52,19 +60,23 @@ export const registrationSubmissionSchema = z
     municipio: z
       .string()
       .trim()
-      .regex(/^\d{5}$/, "Selecciona un municipio válido."),
+      .regex(
+        /^\d{5}$/,
+        "Selecciona un municipio válido.",
+      ),
 
     organizacion: z
       .string()
-      .max(400, "El nombre de la organización es demasiado largo.")
+      .max(
+        400,
+        "El nombre de la organización es demasiado largo.",
+      )
       .transform(normalizeText)
       .pipe(
-        z
-          .string()
-          .max(
-            200,
-            "La iglesia u organización no puede superar 200 caracteres.",
-          ),
+        z.string().max(
+          200,
+          "La iglesia u organización no puede superar 200 caracteres.",
+        ),
       )
       .optional()
       .default(""),
@@ -77,7 +89,10 @@ export type RegistrationSubmission = z.infer<
 
 export const leaderOrganizationSchema = z
   .string()
-  .min(2, "Escribe el nombre de tu iglesia u organización.")
+  .min(
+    2,
+    "Escribe el nombre de tu iglesia u organización.",
+  )
   .max(
     200,
     "La iglesia u organización no puede superar 200 caracteres.",

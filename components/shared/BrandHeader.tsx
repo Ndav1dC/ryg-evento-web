@@ -16,6 +16,7 @@ export default function BrandHeader() {
           height={58}
           className="brand-logo"
           priority
+          style={{ height: "auto" }}
         />
 
         <span className="brand-caption">
