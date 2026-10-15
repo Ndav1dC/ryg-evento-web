@@ -110,6 +110,74 @@ export default async function AdminPage({
           </p>
         </section>
 
+        <nav aria-labelledby="recepcion">
+          <div className="mb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#856013]">
+              Recepción
+            </p>
+
+            <h2
+              id="recepcion"
+              className="mt-2 text-lg font-semibold"
+            >
+              Ingreso al evento
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {esAdmin ? (
+              <Link
+                href="/admin/invitaciones"
+                className={claseTarjeta}
+              >
+                <span className="w-fit rounded-full border border-[#E4D3A1] bg-[#FBF6E8] px-3 py-1 text-xs font-medium text-[#765410]">
+                  Invitaciones QR
+                </span>
+
+                <h3 className="mt-4 text-lg font-semibold">
+                  Emitir y recuperar invitaciones
+                </h3>
+
+                <p className="mt-2 flex-1 text-sm leading-6 text-neutral-600">
+                  Genera invitaciones para inscripciones
+                  aprobadas, recupera el mismo QR cuando
+                  sea necesario y reemite un código nuevo
+                  solo cuando corresponda.
+                </p>
+
+                <span className="mt-5 text-sm font-semibold text-[#856013] group-hover:underline">
+                  Abrir invitaciones
+                  <span aria-hidden="true"> →</span>
+                </span>
+              </Link>
+            ) : null}
+
+            <Link
+              href="/recepcion"
+              className={claseTarjeta}
+            >
+              <span className="w-fit rounded-full border border-[#E4D3A1] bg-[#FBF6E8] px-3 py-1 text-xs font-medium text-[#765410]">
+                Control de ingreso
+              </span>
+
+              <h3 className="mt-4 text-lg font-semibold">
+                Registrar manillas
+              </h3>
+
+              <p className="mt-2 flex-1 text-sm leading-6 text-neutral-600">
+                Valida un código de invitación y registra
+                la entrega de la manilla. El registro queda
+                asociado a la inscripción del asistente.
+              </p>
+
+              <span className="mt-5 text-sm font-semibold text-[#856013] group-hover:underline">
+                Abrir recepción
+                <span aria-hidden="true"> →</span>
+              </span>
+            </Link>
+          </div>
+        </nav>
+
         {esAdmin ? (
           <nav aria-labelledby="herramientas">
             <div className="mb-4">
