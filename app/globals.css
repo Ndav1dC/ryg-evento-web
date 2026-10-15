@@ -859,3 +859,32 @@ a {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.staff-availability {
+  margin-top: 1.5rem;
+}
+
+.staff-availability__label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.staff-availability__label input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0.25rem 0 0;
+  accent-color: #a27c35;
+}
+
+.staff-availability__label input[type="checkbox"]:focus-visible {
+  outline: 2px solid #a27c35;
+  outline-offset: 3px;
+}
+
+.staff-availability .panel-note {
+  margin-top: 0.75rem;
+}

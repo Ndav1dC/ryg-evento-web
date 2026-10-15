@@ -49,9 +49,12 @@ export default function ReviewStep({
         </div>
 
         <div className="review-row">
-          <span>{isStaff ? "Área de apoyo" : "Procedencia"}</span>
+          <span>
+            {isStaff ? "Área de apoyo" : "Procedencia"}
+          </span>
+
           <strong>
-            {isStaff ? data.area : municipalityLabel}
+            {isStaff ? "MEDIOS" : municipalityLabel}
           </strong>
         </div>
 
@@ -61,13 +64,31 @@ export default function ReviewStep({
             <strong>{data.organizacion.trim()}</strong>
           </div>
         )}
+
+        {isStaff && (
+          <>
+            <div className="review-row review-row--equipment">
+              <span>Equipos disponibles</span>
+              <strong>
+                {data.equipos.trim() || "Sin especificar"}
+              </strong>
+            </div>
+
+            <div className="review-row">
+              <span>Disponibilidad</span>
+              <strong>
+                {data.disponibilidadCompleta
+                  ? "Desde el primer día hasta el último"
+                  : "No confirma disponibilidad completa"}
+              </strong>
+            </div>
+          </>
+        )}
       </div>
 
       <p className="panel-note">
-        {isStaff
-          ? "El envío de staff todavía no está habilitado."
-          : "Al enviar, registraremos tu solicitud para revisión. " +
-            "Esto no representa una aprobación ni una reserva de cupo."}
+        Al enviar, registraremos tu solicitud para revisión.
+        Esto no representa una aprobación ni una reserva de cupo.
       </p>
     </>
   );

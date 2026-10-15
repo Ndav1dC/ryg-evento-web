@@ -7,6 +7,10 @@ export type RegistrationFormData = {
   organizacion: string;
   area: string;
   equipos: string;
+  disponibilidadCompleta: boolean;
 };
 
-export type RegistrationField = keyof RegistrationFormData;
+export type RegistrationField = Exclude<
+  keyof RegistrationFormData,
+  "disponibilidadCompleta"
+>;

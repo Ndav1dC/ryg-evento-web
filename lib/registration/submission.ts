@@ -95,17 +95,9 @@ export async function submitRegistration(
       );
     }
 
-    if (!input.disponibilidad_completa) {
-      throw new RegistrationSubmissionError(
-        "Debes confirmar tu disponibilidad para apoyar " +
-          "desde el primer día hasta el último.",
-        400,
-      );
-    }
-
     areaApoyo = "MEDIOS";
     equipos = equipmentResult.data;
-    disponibilidadCompleta = true;
+    disponibilidadCompleta = input.disponibilidad_completa;
   } else {
     if (!/^\d{5}$/.test(input.municipio)) {
       throw new RegistrationSubmissionError(

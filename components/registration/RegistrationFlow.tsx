@@ -125,10 +125,7 @@ function RegistrationFlowClient({
   const [initialSession] = useState<InitialSession>(() => {
     try {
       return {
-        session:
-          tipo === "staff"
-            ? null
-            : readSubmissionSession(codigo),
+        session: readSubmissionSession(codigo),
         failed: false,
       };
     } catch {
@@ -158,6 +155,9 @@ function RegistrationFlowClient({
           whatsapp: restoredPayload.whatsapp,
           municipio: restoredPayload.municipio,
           organizacion: restoredPayload.organizacion,
+          equipos: restoredPayload.equipos,
+          disponibilidadCompleta:
+            restoredPayload.disponibilidad_completa,
         }
       : {}),
   }));
@@ -178,6 +178,7 @@ function RegistrationFlowClient({
   );
 
   const sendingRef = useRef(false);
+
   const pendingSubmissionRef =
     useRef<SubmissionPayload | null>(
       restoredPayload
@@ -203,6 +204,23 @@ function RegistrationFlowClient({
     setData((current) => ({
       ...current,
       [field]: value,
+    }));
+
+    setError("");
+  }
+
+  function updateDisponibilidad(value: boolean) {
+    if (
+      sendingRef.current ||
+      pendingSubmissionRef.current ||
+      submitted
+    ) {
+      return;
+    }
+
+    setData((current) => ({
+      ...current,
+      disponibilidadCompleta: value,
     }));
 
     setError("");
@@ -257,11 +275,6 @@ function RegistrationFlowClient({
       return;
     }
 
-    if (tipo === "staff") {
-      setError("El envío de staff todavía no está habilitado.");
-      return;
-    }
-
     if (!pendingSubmissionRef.current) {
       for (
         let validationStep = 1;
@@ -286,9 +299,16 @@ function RegistrationFlowClient({
         codigo,
         nombre: data.nombre,
         whatsapp: data.whatsapp,
-        municipio: data.municipio,
+        municipio:
+          tipo === "staff" ? "" : data.municipio,
         organizacion:
           tipo === "lider" ? data.organizacion : "",
+        equipos:
+          tipo === "staff" ? data.equipos : "",
+        disponibilidad_completa:
+          tipo === "staff"
+            ? data.disponibilidadCompleta
+            : false,
       };
 
       try {
@@ -313,6 +333,7 @@ function RegistrationFlowClient({
     setError("");
 
     const controller = new AbortController();
+
     const timeoutId = window.setTimeout(() => {
       controller.abort();
     }, 20000);
@@ -402,6 +423,7 @@ function RegistrationFlowClient({
       ...initialRegistrationData,
       area: tipo === "staff" ? "MEDIOS" : "",
     });
+
     setStep(0);
     setDirection(1);
     setError("");
@@ -427,9 +449,13 @@ function RegistrationFlowClient({
       return (
         <StaffAreaStep
           equipos={data.equipos}
+          disponibilidadCompleta={
+            data.disponibilidadCompleta
+          }
           onEquiposChange={(value) =>
             updateField("equipos", value)
           }
+          onDisponibilidadChange={updateDisponibilidad}
         />
       );
     }
@@ -590,7 +616,7 @@ function RegistrationFlowClient({
                 onNext={goNext}
                 onSubmit={() => void handleSubmit()}
                 isSubmitting={isSubmitting}
-                canSubmit={tipo !== "staff"}
+                canSubmit={true}
                 retryLocked={retryLocked}
               />
 

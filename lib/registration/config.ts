@@ -10,6 +10,7 @@ export const initialRegistrationData: RegistrationFormData = {
   organizacion: "",
   area: "",
   equipos: "",
+  disponibilidadCompleta: false,
 };
 
 export const staffAreas = ["MEDIOS"] as const;

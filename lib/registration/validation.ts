@@ -40,9 +40,18 @@ export function validateRegistrationStep(
       if (equipos.length > 1000) {
         return "La descripción no puede superar 1000 caracteres.";
       }
+
+
     } else if (!/^\d{5}$/.test(data.municipio)) {
       return "Selecciona un municipio de la lista.";
     }
   }
+
+  if (tipo === "lider" && step === 3) {
+    if (!data.organizacion.trim()) {
+      return "Escribe el nombre de tu iglesia u organización.";
+    }
+  }
+
   return null;
 }

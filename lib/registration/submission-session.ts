@@ -4,8 +4,25 @@ const storedPayloadSchema = z.object({
   solicitud_id: z.string().uuid(),
   nombre: z.string().max(300),
   whatsapp: z.string().max(40),
-  municipio: z.string().regex(/^\d{5}$/),
+
+  municipio: z
+    .string()
+    .refine(
+      (value) => value === "" || /^\d{5}$/.test(value),
+    ),
+
   organizacion: z.string().max(400),
+
+  equipos: z
+    .string()
+    .max(2000)
+    .optional()
+    .default(""),
+
+  disponibilidad_completa: z
+    .boolean()
+    .optional()
+    .default(false),
 });
 
 const submissionSessionSchema = z.discriminatedUnion("status", [
@@ -62,6 +79,9 @@ export function savePendingSubmission(
       whatsapp: payload.whatsapp,
       municipio: payload.municipio,
       organizacion: payload.organizacion,
+      equipos: payload.equipos,
+      disponibilidad_completa:
+        payload.disponibilidad_completa,
     },
   };
 
