@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { requerirSesionPanel } from "@/lib/auth/panel";
 import { cerrarSesion } from "./actions";
@@ -25,6 +26,9 @@ export default async function AdminPage({
   const nombreRol = esAdmin
     ? "Administración"
     : "Recepción";
+
+  const claseTarjeta =
+    "group flex h-full flex-col rounded-2xl border border-[#E1D3AC] bg-white p-6 shadow-sm transition hover:border-[#B88A20] hover:bg-[#FDFBF5] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#856013]";
 
   return (
     <main className="min-h-screen bg-[#FAF8F2] text-[#171717]">
@@ -101,10 +105,78 @@ export default async function AdminPage({
 
           <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
             {esAdmin
-              ? "Este es tu espacio para revisar las solicitudes y coordinar la gestión del evento."
+              ? "Consulta las inscripciones y administra la capacidad y la apertura del registro. Las nuevas inscripciones se aprueban automáticamente cuando hay cupos disponibles."
               : "Este es tu espacio para apoyar la recepción y el control de ingreso al evento."}
           </p>
         </section>
+
+        {esAdmin ? (
+          <nav aria-labelledby="herramientas">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#856013]">
+                Administración
+              </p>
+
+              <h2
+                id="herramientas"
+                className="mt-2 text-lg font-semibold"
+              >
+                Herramientas del evento
+              </h2>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Link
+                href="/admin/configuracion"
+                className={claseTarjeta}
+              >
+                <span className="w-fit rounded-full border border-[#E4D3A1] bg-[#FBF6E8] px-3 py-1 text-xs font-medium text-[#765410]">
+                  Configuración
+                </span>
+
+                <h3 className="mt-4 text-lg font-semibold">
+                  Capacidad y registro
+                </h3>
+
+                <p className="mt-2 flex-1 text-sm leading-6 text-neutral-600">
+                  Consulta los cupos ocupados y disponibles,
+                  ajusta la capacidad y abre o cierra las
+                  inscripciones.
+                </p>
+
+                <span className="mt-5 text-sm font-semibold text-[#856013] group-hover:underline">
+                  Administrar configuración
+                  <span aria-hidden="true"> →</span>
+                </span>
+              </Link>
+
+              <Link
+                href="/admin/revision"
+                className={claseTarjeta}
+              >
+                <span className="w-fit rounded-full border border-[#E4D3A1] bg-[#FBF6E8] px-3 py-1 text-xs font-medium text-[#765410]">
+                  Gestión manual
+                </span>
+
+                <h3 className="mt-4 text-lg font-semibold">
+                  Revisión de solicitudes
+                </h3>
+
+                <p className="mt-2 flex-1 text-sm leading-6 text-neutral-600">
+                  Gestiona solicitudes pendientes o en lista
+                  de espera. Este paso no es obligatorio
+                  para las nuevas inscripciones aprobadas
+                  automáticamente.
+                </p>
+
+                <span className="mt-5 text-sm font-semibold text-[#856013] group-hover:underline">
+                  Abrir revisión
+                  <span aria-hidden="true"> →</span>
+                </span>
+              </Link>
+            </div>
+          </nav>
+        ) : null}
 
         <Solicitudes filtros={filtros} />
 
